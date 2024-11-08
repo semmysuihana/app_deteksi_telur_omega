@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EggMaster - Cek Kamera</title>
+    
+    <!-- Tambahkan link ke CSS Bootstrap (Contoh menggunakan Bootstrap v5) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        .loading-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(186, 186, 186, 0.8);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-egg {
+            width: 80px;
+            height: 120px;
+            background-color: #ffa500;
+            border-radius: 50% 50% 40% 40%;
+            border: 8px solid #f0f0f0;
+            animation: rotate 1.5s infinite linear;
+        }
+
+        @keyframes rotate {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Elemen Loading -->
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-egg"></div>
+        <div class="loading-text">Mengecek gambar...</div>
+    </div>
+
+    <div class="container mt-5">
+        <h1 class="text-center">Deteksi Telur Sehat - Cek Kamera</h1>
+
+        <form method="POST" enctype="multipart/form-data" class="my-4" id="captureForm">
+            <div class="mb-3">
+                <label for="camera" class="form-label">Ambil Gambar dari Kamera : </label>
+                <video id="camera" width="100%" height="400" autoplay></video>
+                <button type="button" id="captureButton" class="btn btn-primary" onclick="showLoading()">Ambil Gambar</button>
+                <canvas id="capturedCanvas" width="2000" height="1000" style="display: none;"></canvas>
+                <!-- Add hidden input field to store captured image data -->
+                <input type="hidden" id="capturedData" name="capturedData">
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary back-button">Back</a>
+        </form>
+
+        {% if uploaded %}
+            <h2 class="my-3">Hasil Gambar:</h2>
+            <img src="{{ url_for('static', filename='annotated_image.jpg') }}" alt="Uploaded Image" class="img-fluid">
+        {% endif %}
+    </div>
+
+    <!-- Tambahkan link ke JavaScript Bootstrap (Opsional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Tambahkan script JavaScript untuk mengakses kamera dan mengambil gambar -->
+    <script>
+        const video = document.getElementById('camera');
+        const captureButton = document.getElementById('captureButton');
+        const capturedCanvas = document.getElementById('capturedCanvas');
+        const capturedDataInput = document.getElementById('capturedData');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const context = capturedCanvas.getContext('2d');
+
+        // Mengakses kamera pengguna
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        resolve();
+                    };
+                });
+            })
+            .then(() => {
+                // Mengambil gambar dari kamera dan menampilkan di canvas
+                captureButton.addEventListener('click', () => {
+                    showLoading();
+                    context.drawImage(video, 0, 0, capturedCanvas.width, capturedCanvas.height);
+                    capturedCanvas.style.display = 'block';
+                    video.style.display = 'none';
+
+                    // Mengambil data gambar dari canvas dan menyimpan ke input field
+                    const capturedImageData = capturedCanvas.toDataURL('image/jpeg');
+                    capturedDataInput.value = capturedImageData;
+
+                    // Submit the form to send the captured image data to the server
+                    document.getElementById('captureForm').submit();
+                });
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+
+        function showLoading() {
+            loadingContainer.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
